@@ -58,7 +58,7 @@ export default function Header({ user, usage, onSignIn, onSignOut, onStaffAccess
 
           <Link
             to="/pricing"
-            className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-navy dark:hover:text-white transition-colors hidden sm:block"
+            className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-navy dark:hover:text-white transition-colors"
           >
             Pricing
           </Link>
