@@ -93,6 +93,7 @@ function MainApp({ user, usage, onSignIn }) {
 
   async function handleProcess() {
     if (!videoFile) return;
+    if (!user) { onSignIn(); return; }
 
     setProcessing(true);
     setDone(false);
