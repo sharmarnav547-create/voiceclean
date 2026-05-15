@@ -39,19 +39,20 @@ export default function Header({ user, usage, onSignIn, onSignOut, onStaffAccess
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-white/[0.10] bg-white/90 dark:bg-[#0a0a0f]/90 backdrop-blur-md transition-colors duration-300">
-      <div className="max-w-[1100px] mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
+      <div className="max-w-[1100px] mx-auto px-3 sm:px-6 flex items-center justify-between h-14 sm:h-16">
 
         {/* Logo — 5 rapid clicks opens staff dashboard */}
-        <div onClick={handleLogoClick} className="flex items-center gap-2 group cursor-pointer select-none">
-          <LogoIcon className="w-8 h-8 group-hover:glow-accent-sm transition-all" />
-          <span className="font-display font-bold text-navy dark:text-white text-lg tracking-tight">
-            Clear<span className="text-cyan-600 dark:text-accent">Voice</span> AI
+        <div onClick={handleLogoClick} className="flex items-center gap-1.5 sm:gap-2 group cursor-pointer select-none">
+          <LogoIcon className="w-7 h-7 sm:w-8 sm:h-8 group-hover:glow-accent-sm transition-all flex-shrink-0" />
+          <span className="font-display font-bold text-navy dark:text-white text-base sm:text-lg tracking-tight">
+            Clear<span className="text-cyan-600 dark:text-accent">Voice</span>
+            <span className="hidden sm:inline"> AI</span>
           </span>
         </div>
 
         {/* Right side */}
-        <div className="flex items-center gap-4">
-          <div style={{ transform: 'scale(0.6)', transformOrigin: 'center' }}>
+        <div className="flex items-center gap-2 sm:gap-4">
+          <div style={{ transform: 'scale(0.55)', transformOrigin: 'center' }} className="flex-shrink-0">
             <SkyToggle checked={theme === 'dark'} onChange={toggleTheme} />
           </div>
 
@@ -63,28 +64,29 @@ export default function Header({ user, usage, onSignIn, onSignOut, onStaffAccess
           </Link>
 
           {user ? (
-            <div className="flex items-center gap-3">
-              <PlanBadge plan={usage.plan} used={usage.videosUsedThisMonth} />
+            <div className="flex items-center gap-2 sm:gap-3">
+              <span className="hidden sm:block"><PlanBadge plan={usage.plan} used={usage.videosUsedThisMonth} /></span>
               <img
                 src={user.photoURL}
                 alt={user.displayName}
-                className="w-8 h-8 rounded-full ring-2 ring-accent/30"
+                className="w-8 h-8 rounded-full ring-2 ring-accent/30 flex-shrink-0"
                 referrerPolicy="no-referrer"
               />
               <button
                 onClick={onSignOut}
                 aria-label="Sign out"
-                className="text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                className="text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 transition-colors p-1.5 rounded-lg"
               >
                 <LogOut size={16} />
               </button>
             </div>
           ) : (
-            <MotionButton
-              label="Sign In"
+            <button
               onClick={onSignIn}
-              classes="scale-[0.78] origin-right"
-            />
+              className="text-sm font-semibold px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-cyan-600 dark:bg-accent text-white hover:opacity-90 transition-opacity"
+            >
+              Sign In
+            </button>
           )}
         </div>
       </div>

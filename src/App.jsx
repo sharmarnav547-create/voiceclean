@@ -230,23 +230,23 @@ function MainApp({ user, usage, onSignIn }) {
         <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03] dark:opacity-[0.02]" />
       </div>
 
-      <div className="max-w-[1100px] mx-auto px-4 sm:px-6 pt-20 pb-10 space-y-12 relative z-10">
+      <div className="max-w-[1100px] mx-auto px-4 sm:px-6 pt-10 sm:pt-16 md:pt-20 pb-10 space-y-8 sm:space-y-12 relative z-10">
         {/* Hero */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: "easeOut" }}
-          className="text-center space-y-6 py-6"
+          className="text-center space-y-4 sm:space-y-6 py-4 sm:py-6"
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 border border-accent/20 text-cyan-600 dark:text-accent text-sm font-medium mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 border border-accent/20 text-cyan-600 dark:text-accent text-xs sm:text-sm font-medium mb-2 sm:mb-4">
             <span className="w-2 h-2 rounded-full bg-accent animate-pulse"></span>
             AI Audio Engine v4.0 Active
           </div>
-          <h1 className="font-display font-extrabold text-5xl sm:text-6xl md:text-7xl text-navy dark:text-white leading-tight tracking-tight">
+          <h1 className="font-display font-extrabold text-3xl sm:text-5xl md:text-6xl lg:text-7xl text-navy dark:text-white leading-tight tracking-tight">
             Remove background noise.<br />
             <span className="text-gradient">Enhance voice clarity.</span>
           </h1>
-          <p className="text-slate-600 dark:text-slate-400 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed">
+          <p className="text-slate-600 dark:text-slate-400 text-base sm:text-lg md:text-xl max-w-2xl mx-auto leading-relaxed px-2">
             Upload any video and instantly get studio-quality audio. Our AI separates voices from wind, traffic, and echo—directly in your browser.
           </p>
         </motion.div>

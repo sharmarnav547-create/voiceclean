@@ -73,7 +73,7 @@ export default function UploadZone({ onFileSelected }) {
           onDragOver={onDragOver}
           onDragLeave={() => setDragging(false)}
           onClick={() => inputRef.current?.click()}
-          className={`relative border-2 border-dashed rounded-3xl p-12 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 overflow-hidden ${
+          className={`relative border-2 border-dashed rounded-3xl p-8 sm:p-12 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 overflow-hidden ${
             dragging
               ? 'border-accent bg-accent/10 dark:bg-accent/5 glow-accent scale-[1.02]'
               : 'border-slate-300 dark:border-white/25 bg-white/70 dark:bg-white/[0.03] hover:border-accent/70 hover:bg-slate-50 dark:hover:bg-accent/[0.04] shadow-lg hover:shadow-xl dark:shadow-none'
@@ -94,13 +94,13 @@ export default function UploadZone({ onFileSelected }) {
           >
             {dragging ? <Upload size={36} /> : <Video size={36} />}
           </motion.div>
-          <p className="text-navy dark:text-white font-semibold text-2xl mb-2 font-display">
+          <p className="text-navy dark:text-white font-semibold text-xl sm:text-2xl mb-2 font-display">
             {dragging ? 'Drop your video to enhance' : 'Upload your video'}
           </p>
           <p className="text-slate-600 dark:text-slate-300 text-base mb-6">
             Drag & drop or <span className="text-cyan-600 dark:text-accent hover:text-purple transition-colors font-medium">browse files</span>
           </p>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-4">
              <span className="px-3 py-1 bg-slate-100 dark:bg-white/10 rounded-full text-xs font-semibold text-slate-700 dark:text-slate-300">MP4 Format</span>
              <span className="px-3 py-1 bg-slate-100 dark:bg-white/10 rounded-full text-xs font-semibold text-slate-700 dark:text-slate-300">Max 500 MB</span>
           </div>
@@ -121,7 +121,7 @@ export default function UploadZone({ onFileSelected }) {
           <div className="relative group">
             <video
               src={preview.url}
-              className="w-32 h-24 object-cover rounded-xl bg-black flex-shrink-0 border border-slate-200 dark:border-white/15"
+              className="w-24 h-16 sm:w-32 sm:h-24 object-cover rounded-xl bg-black flex-shrink-0 border border-slate-200 dark:border-white/15"
               muted
             />
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center">

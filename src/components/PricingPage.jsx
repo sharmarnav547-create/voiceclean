@@ -106,26 +106,26 @@ export default function PricingPage({ currentPlan, user, onSignIn, onUpgrade }) 
         />
       </div>
 
-      <div className="relative z-10 max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
+      <div className="relative z-10 max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 lg:py-24">
 
         {/* Header */}
-        <div className="text-center mb-16 sm:mb-20">
+        <div className="text-center mb-10 sm:mb-16 lg:mb-20">
           <button
             onClick={() => navigate('/')}
-            className="inline-flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-navy dark:hover:text-white text-sm font-medium mb-10 transition-colors duration-200 group"
+            className="inline-flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-navy dark:hover:text-white text-sm font-medium mb-6 sm:mb-10 transition-colors duration-200 group"
           >
             <ArrowLeft size={15} className="group-hover:-translate-x-1 transition-transform duration-200" />
             Back to App
           </button>
 
-          <div className="flex justify-center mb-6">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 text-xs font-bold tracking-[0.15em] uppercase backdrop-blur-md shadow-sm">
-              <Sparkles size={13} className="text-accent" />
+          <div className="flex justify-center mb-4 sm:mb-6">
+            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 text-xs font-bold tracking-[0.15em] uppercase backdrop-blur-md shadow-sm">
+              <Sparkles size={12} className="text-accent" />
               Transparent Pricing
             </div>
           </div>
 
-          <h1 className="font-display font-extrabold text-4xl sm:text-5xl lg:text-[3.75rem] text-navy dark:text-white leading-tight tracking-tight mb-5">
+          <h1 className="font-display font-extrabold text-3xl sm:text-4xl lg:text-5xl xl:text-[3.75rem] text-navy dark:text-white leading-tight tracking-tight mb-4 sm:mb-5">
             Simple Pricing For{' '}
             <br className="hidden sm:block" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00d4ff] via-[#38bdf8] to-[#7c3aed]">
@@ -133,13 +133,13 @@ export default function PricingPage({ currentPlan, user, onSignIn, onUpgrade }) 
             </span>
           </h1>
 
-          <p className="text-slate-600 dark:text-slate-400 text-lg sm:text-xl max-w-xl mx-auto font-medium leading-relaxed">
+          <p className="text-slate-600 dark:text-slate-400 text-base sm:text-lg lg:text-xl max-w-xl mx-auto font-medium leading-relaxed">
             Choose the perfect plan for your content workflow.
           </p>
         </div>
 
         {/* Cards grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-6 items-start">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 lg:gap-6 items-start">
           {PLANS_DATA.map((plan, idx) => (
             <PlanCard
               key={plan.id}
