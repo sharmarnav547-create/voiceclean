@@ -49,7 +49,7 @@ export default function ProcessingPanel({
       animate={{ opacity: 1, y: 0 }}
       className="w-full max-w-2xl mx-auto space-y-6 bg-white dark:bg-[#0a0a0f]/50 backdrop-blur-md p-6 sm:p-8 rounded-3xl border border-slate-300 dark:border-white/[0.10] shadow-lg dark:shadow-xl"
     >
-      <h2 className="font-display font-bold text-navy dark:text-white text-2xl">Audio Enhancement Settings</h2>
+      <h2 className="font-display font-bold text-navy dark:text-white text-xl sm:text-2xl">Audio Enhancement Settings</h2>
 
       {/* GPU/CPU indicator */}
       {hasGPU !== null && (
@@ -175,7 +175,7 @@ export default function ProcessingPanel({
         onClick={onProcess}
         disabled={!hasFile || processing || done || !canProcess}
         aria-label="Remove Noise"
-        className={`relative w-full py-4 rounded-2xl font-display font-bold text-lg flex items-center justify-center gap-3 shadow-lg ${
+        className={`relative w-full py-4 rounded-2xl font-display font-bold text-base sm:text-lg flex items-center justify-center gap-3 shadow-lg ${
           done
             ? 'btn-done-gradient cursor-default'
             : !hasFile || !canProcess
@@ -268,9 +268,9 @@ function Card({ title, children, locked, onLockClick }) {
 
 function SettingRow({ label, children }) {
   return (
-    <div className="flex items-center justify-between py-1">
-      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{label}</span>
-      <div className="flex items-center gap-2">{children}</div>
+    <div className="flex flex-wrap items-center justify-between gap-2 py-1">
+      <span className="text-sm font-medium text-slate-700 dark:text-slate-300 flex-shrink-0">{label}</span>
+      <div className="flex items-center gap-2 flex-shrink-0">{children}</div>
     </div>
   );
 }
@@ -302,7 +302,7 @@ function SegmentControl({ options, labels, value, onChange }) {
         <button
           key={opt}
           onClick={() => onChange(opt)}
-          className={`flex-1 py-1.5 px-3 text-xs font-medium rounded-lg transition-all duration-200 ${
+          className={`flex-1 py-1.5 px-2 sm:px-3 text-xs font-medium rounded-lg transition-all duration-200 whitespace-nowrap ${
             value === opt
               ? 'bg-cyan-600 dark:bg-accent text-white dark:text-[#0a0a0f] shadow-sm'
               : 'text-slate-600 dark:text-slate-400 hover:text-navy dark:hover:text-white hover:bg-slate-200 dark:hover:bg-white/5'

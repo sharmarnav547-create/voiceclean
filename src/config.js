@@ -1,6 +1,11 @@
 export const TEST_MODE = false;
 
-// ── UPI Payment Config ──────────────────────────────────────────
-// Replace UPI_QR_URL with the direct image URL of your UPI QR code
-export const UPI_QR_URL = ''; // TODO: paste your UPI QR code image URL here
-export const UPI_ID     = 'yourname@upi'; // shown as text below the QR
+// ── UPI Payment Config — per-plan QR codes ──────────────────────
+export const PLAN_QR = {
+  starter: '/starter-qr.jpg',
+  creator: '/creator-qr.jpg',
+  pro:     '/pro-qr.jpg',
+};
+
+// Fallback (used if plan not found in PLAN_QR)
+export const UPI_QR_URL = '/starter-qr.jpg';

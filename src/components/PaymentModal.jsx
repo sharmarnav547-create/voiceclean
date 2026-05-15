@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { X, QrCode, Upload, Check, Phone, AlertCircle } from 'lucide-react';
 import { PLANS } from '../utils/planUtils';
-import { UPI_QR_URL, UPI_ID } from '../config';
+import { PLAN_QR, UPI_QR_URL } from '../config';
 import { submitPaymentRequest } from '../utils/staffUtils';
 
 export default function PaymentModal({ planId, onClose, user }) {
@@ -90,9 +90,9 @@ export default function PaymentModal({ planId, onClose, user }) {
             </div>
 
             <div className="flex justify-center">
-              {UPI_QR_URL ? (
+              {(PLAN_QR[planId] || UPI_QR_URL) ? (
                 <img
-                  src={UPI_QR_URL}
+                  src={PLAN_QR[planId] || UPI_QR_URL}
                   alt="UPI QR Code"
                   className="w-48 h-48 rounded-xl border border-white/10 object-contain bg-white p-1"
                 />
@@ -104,13 +104,8 @@ export default function PaymentModal({ planId, onClose, user }) {
               )}
             </div>
 
-            <div className="text-center">
-              <p className="text-[10px] uppercase tracking-widest text-slate-600 mb-0.5">UPI ID</p>
-              <p className="text-sm font-mono text-accent font-semibold">{UPI_ID}</p>
-            </div>
-
             <p className="text-xs text-slate-400 text-center leading-relaxed">
-              Scan the QR code or copy the UPI ID to pay <strong className="text-white">₹{plan.price}</strong>. After payment, click below to submit your receipt.
+              Scan the QR code to pay <strong className="text-white">₹{plan.price}</strong>. After payment, click below to submit your receipt.
             </p>
 
             <button
