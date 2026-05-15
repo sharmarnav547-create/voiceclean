@@ -5,6 +5,37 @@ import { motion, AnimatePresence } from 'framer-motion';
 import PlanBadge from './PlanBadge';
 import LogoIcon from './LogoIcon';
 import SkyToggle from './ui/sky-toggle';
+import { PLANS } from '../utils/planUtils';
+
+function MobilePlanInfo({ plan = 'free', used = 0 }) {
+  const planInfo = PLANS[plan] || PLANS.free;
+  const limit     = planInfo.videosPerMonth;
+  const remaining = Math.max(0, limit - used);
+  const pct       = limit > 0 ? Math.min(100, (used / limit) * 100) : 0;
+
+  const colors = {
+    free:    { bar: 'bg-slate-400',   text: 'text-slate-500 dark:text-slate-400',   label: 'text-slate-600 dark:text-slate-300' },
+    starter: { bar: 'bg-cyan-500',    text: 'text-cyan-600 dark:text-cyan-400',     label: 'text-cyan-700 dark:text-cyan-300'   },
+    creator: { bar: 'bg-violet-500',  text: 'text-violet-600 dark:text-violet-400', label: 'text-violet-700 dark:text-violet-300' },
+    pro:     { bar: 'bg-pink-500',    text: 'text-pink-600 dark:text-pink-400',     label: 'text-pink-700 dark:text-pink-300'   },
+    plus:    { bar: 'bg-amber-500',   text: 'text-amber-600 dark:text-amber-400',   label: 'text-amber-700 dark:text-amber-300' },
+  };
+  const c = colors[plan] || colors.free;
+
+  return (
+    <div className="mt-1 space-y-1.5">
+      <div className="flex items-center justify-between">
+        <span className={`text-xs font-semibold ${c.label}`}>{planInfo.label} Plan</span>
+        <span className={`text-xs font-medium ${c.text}`}>{remaining}/{limit === 999 ? '∞' : limit} left</span>
+      </div>
+      {limit !== 999 && (
+        <div className="h-1.5 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
+          <div className={`h-full rounded-full transition-all ${c.bar}`} style={{ width: `${pct}%` }} />
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Header({ user, usage, onSignIn, onSignOut, onStaffAccess }) {
   const [theme, setTheme] = useState(() =>
@@ -183,10 +214,10 @@ export default function Header({ user, usage, onSignIn, onSignOut, onStaffAccess
                     <motion.div custom={0} variants={menuItemVariants} initial="hidden" animate="visible" exit="exit"
                       className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] mb-2"
                     >
-                      <img src={user.photoURL} alt={user.displayName} className="w-10 h-10 rounded-full ring-2 ring-accent/30" referrerPolicy="no-referrer" />
-                      <div className="min-w-0">
+                      <img src={user.photoURL} alt={user.displayName} className="w-11 h-11 rounded-full ring-2 ring-accent/30 flex-shrink-0" referrerPolicy="no-referrer" />
+                      <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold text-navy dark:text-white truncate">{user.displayName}</p>
-                        <PlanBadge plan={usage.plan} used={usage.videosUsedThisMonth} />
+                        <MobilePlanInfo plan={usage.plan} used={usage.videosUsedThisMonth} />
                       </div>
                     </motion.div>
 
