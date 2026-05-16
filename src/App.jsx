@@ -62,6 +62,7 @@ function MainApp({ user, usage, onSignIn }) {
   const [noisePercent, setNoisePercent] = useState(null);
 
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [done, setDone] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -72,11 +73,23 @@ function MainApp({ user, usage, onSignIn }) {
   const [statusKind, setStatusKind] = useState('idle');
   const [upgradeFeature, setUpgradeFeature] = useState(null);
   const [payPlan, setPayPlan] = useState(null);
+  const [showDownloadPopup, setShowDownloadPopup] = useState(false);
 
   const userCanProcess = canProcess(usage.plan, usage.videosUsedThisMonth);
 
   function setStatus(kind, msg) { setStatusKind(kind); setStatusMsg(msg); }
   function addLog(msg) { setLogs((prev) => [...prev, msg]); }
+
+  // Auto-download when processing finishes and advanced settings are off
+  useEffect(() => {
+    if (done && !showAdvanced && cleanedUrl) {
+      const a = document.createElement('a');
+      a.href = cleanedUrl;
+      a.download = `${videoFile?.name?.replace(/\.[^.]+$/, '') || 'video'}-cleaned.mp4`;
+      a.click();
+      setShowDownloadPopup(true);
+    }
+  }, [done]);
 
   function handleFileSelected(file, url) {
     setVideoFile(file);
@@ -190,6 +203,14 @@ function MainApp({ user, usage, onSignIn }) {
     }
   }
 
+  function handleSimpleDownload() {
+    if (!cleanedUrl) return;
+    const a = document.createElement('a');
+    a.href = cleanedUrl;
+    a.download = `${videoFile?.name?.replace(/\.[^.]+$/, '') || 'video'}-cleaned.mp4`;
+    a.click();
+  }
+
   async function handleExport({ format, quality, filename }) {
     const fmtInfo = FORMATS[format];
     const qualInfo = QUALITY[quality];
@@ -275,6 +296,9 @@ function MainApp({ user, usage, onSignIn }) {
             stages={STAGES}
             logs={logs}
             onProcess={handleProcess}
+            onDownload={handleSimpleDownload}
+            showAdvanced={showAdvanced}
+            onAdvancedChange={setShowAdvanced}
             onUpgradePrompt={(f) => setUpgradeFeature(f)}
             settings={settings}
             onSettingsChange={setSettings}
@@ -297,7 +321,7 @@ function MainApp({ user, usage, onSignIn }) {
 
       {done && <ResultPanel hasGPU={hasGPU} />}
 
-      {done && (
+      {done && showAdvanced && (
         <div ref={exportRef}>
           <ExportPanel
             cleanedBlob={cleanedUrl ? true : null}
@@ -311,6 +335,8 @@ function MainApp({ user, usage, onSignIn }) {
 
       <StatusBar status={statusKind} message={statusMsg} onDismiss={() => setStatus('idle', '')} />
 
+      {showDownloadPopup && <DownloadSuccessPopup onClose={() => setShowDownloadPopup(false)} />}
+
       {upgradeFeature && <UpgradePrompt feature={upgradeFeature} onClose={() => setUpgradeFeature(null)} />}
       {payPlan && (
         <PaymentModal
@@ -322,6 +348,47 @@ function MainApp({ user, usage, onSignIn }) {
       </div>
 
       {!videoFile && <MarketingSections />}
+    </div>
+  );
+}
+
+function DownloadSuccessPopup({ onClose }) {
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 sm:p-0">
+      {/* Backdrop */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      {/* Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 40, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 40, scale: 0.95 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+        className="relative z-10 w-full max-w-sm bg-white dark:bg-[#13131a] rounded-3xl shadow-2xl p-7 flex flex-col items-center text-center gap-4 border border-slate-200 dark:border-white/10"
+      >
+        <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-3xl">
+          📥
+        </div>
+        <div>
+          <p className="font-display font-bold text-navy dark:text-white text-lg mb-1">Video is downloading!</p>
+          <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
+            Your cleaned video has been sent to your device.<br />
+            Open your <span className="font-semibold text-navy dark:text-white">Downloads folder</span> on PC, or check your <span className="font-semibold text-navy dark:text-white">Gallery</span> on phone to find it.
+          </p>
+        </div>
+        <button
+          onClick={onClose}
+          className="w-full py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-violet-600 text-white font-semibold text-sm hover:opacity-90 transition-opacity"
+        >
+          Got it!
+        </button>
+      </motion.div>
     </div>
   );
 }

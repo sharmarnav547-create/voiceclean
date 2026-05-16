@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Lock, AlertTriangle, Loader2, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Lock, AlertTriangle, Loader2, CheckCircle2, ChevronDown, ChevronUp, Download } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function ProcessingPanel({
@@ -13,6 +13,9 @@ export default function ProcessingPanel({
   stages = [],
   logs,
   onProcess,
+  onDownload,
+  showAdvanced,
+  onAdvancedChange,
   onUpgradePrompt,
   settings,
   onSettingsChange,
@@ -47,7 +50,7 @@ export default function ProcessingPanel({
       animate={{ opacity: 1, y: 0 }}
       className="w-full max-w-2xl mx-auto space-y-6 bg-white dark:bg-[#0a0a0f]/50 backdrop-blur-md p-6 sm:p-8 rounded-3xl border border-slate-300 dark:border-white/[0.10] shadow-lg dark:shadow-xl"
     >
-      <h2 className="font-display font-bold text-navy dark:text-white text-xl sm:text-2xl">Audio Enhancement Settings</h2>
+      <h2 className="font-display font-bold text-navy dark:text-white text-xl sm:text-2xl">Noise Removal</h2>
 
       {/* GPU/CPU indicator */}
       {hasGPU !== null && (
@@ -82,114 +85,137 @@ export default function ProcessingPanel({
         </div>
       )}
 
-      {/* Noise Reduction */}
-      <Card title="Noise Reduction">
-        <SettingRow label="Reduction Strength">
-          <SegmentControl
-            options={['light', 'medium', 'aggressive']}
-            labels={['Light', 'Medium', 'Aggressive']}
-            value={settings.noiseStrength}
-            onChange={(v) => change('noiseStrength', v)}
-          />
-        </SettingRow>
-        <SettingRow label="Enhance Voice Clarity">
-          <Toggle checked={settings.enhanceSpeech} onChange={() => toggle('enhanceSpeech')} />
-        </SettingRow>
-        <p className="text-xs text-slate-600 dark:text-slate-500 mt-1">
-          Demucs v4 separates vocals from everything else. DeepFilterNet3 removes any residual artifacts.
-        </p>
-      </Card>
+      {/* Advanced settings — hidden by default */}
+      {showAdvanced && (
+        <>
+          <Card title="Noise Reduction">
+            <SettingRow label="Reduction Strength">
+              <SegmentControl
+                options={['light', 'medium', 'aggressive']}
+                labels={['Light', 'Medium', 'Aggressive']}
+                value={settings.noiseStrength}
+                onChange={(v) => change('noiseStrength', v)}
+              />
+            </SettingRow>
+            <SettingRow label="Enhance Voice Clarity">
+              <Toggle checked={settings.enhanceSpeech} onChange={() => toggle('enhanceSpeech')} />
+            </SettingRow>
+            <p className="text-xs text-slate-600 dark:text-slate-500 mt-1">
+              Demucs v4 separates vocals from everything else. Wiener filter removes residual artifacts.
+            </p>
+          </Card>
 
-      {/* Voice Boost */}
-      <Card title="Voice Boost" locked={isLocked('boostVoice')} onLockClick={() => onUpgradePrompt('voiceBoost')}>
-        <SettingRow label="Boost Voice">
-          <Toggle
-            checked={settings.boostVoice}
-            onChange={() => toggle('boostVoice')}
-            disabled={isLocked('boostVoice')}
-          />
-          {isLocked('boostVoice') && <Lock size={14} className="text-slate-500 dark:text-slate-400 ml-1" />}
-        </SettingRow>
-        {settings.boostVoice && isPlusOrPro && (
-          <div className="mt-3 space-y-2">
-            <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400">
-              <span>Boost Amount</span>
-              <span className="font-mono text-accent">+{settings.boostDb} dB</span>
-            </div>
-            <input
-              type="range" min={1} max={12} step={1}
-              value={settings.boostDb}
-              onChange={(e) => change('boostDb', Number(e.target.value))}
-              className="w-full accent-accent"
-              style={{ background: `linear-gradient(to right, #00d4ff ${(settings.boostDb - 1) / 11 * 100}%, #2a2a3e ${(settings.boostDb - 1) / 11 * 100}%)` }}
-            />
-            {settings.boostDb > 9 && (
-              <p className="flex items-center gap-1.5 text-amber-700 dark:text-yellow-400 text-xs">
-                <AlertTriangle size={12} />
-                High boost may cause clipping — Volume Balance recommended
-              </p>
+          <Card title="Voice Boost" locked={isLocked('boostVoice')} onLockClick={() => onUpgradePrompt('voiceBoost')}>
+            <SettingRow label="Boost Voice">
+              <Toggle
+                checked={settings.boostVoice}
+                onChange={() => toggle('boostVoice')}
+                disabled={isLocked('boostVoice')}
+              />
+              {isLocked('boostVoice') && <Lock size={14} className="text-slate-500 dark:text-slate-400 ml-1" />}
+            </SettingRow>
+            {settings.boostVoice && isPlusOrPro && (
+              <div className="mt-3 space-y-2">
+                <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400">
+                  <span>Boost Amount</span>
+                  <span className="font-mono text-accent">+{settings.boostDb} dB</span>
+                </div>
+                <input
+                  type="range" min={1} max={12} step={1}
+                  value={settings.boostDb}
+                  onChange={(e) => change('boostDb', Number(e.target.value))}
+                  className="w-full accent-accent"
+                  style={{ background: `linear-gradient(to right, #00d4ff ${(settings.boostDb - 1) / 11 * 100}%, #2a2a3e ${(settings.boostDb - 1) / 11 * 100}%)` }}
+                />
+                {settings.boostDb > 9 && (
+                  <p className="flex items-center gap-1.5 text-amber-700 dark:text-yellow-400 text-xs">
+                    <AlertTriangle size={12} />
+                    High boost may cause clipping — Volume Balance recommended
+                  </p>
+                )}
+              </div>
             )}
-          </div>
-        )}
-      </Card>
+          </Card>
 
-      {/* Volume Balance */}
-      <Card title="Volume Balance" locked={isLocked('balanceVolume')} onLockClick={() => onUpgradePrompt('volumeBalance')}>
-        <SettingRow label={
-          <span className="flex items-center gap-1.5">
-            Balance Volume
-            <span title="Balances volume so quiet parts are louder and loud parts are softer." className="text-slate-500 cursor-help">ℹ️</span>
-          </span>
-        }>
-          <Toggle
-            checked={settings.balanceVolume}
-            onChange={() => toggle('balanceVolume')}
-            disabled={isLocked('balanceVolume')}
-          />
-          {isLocked('balanceVolume') && <Lock size={14} className="text-slate-500 dark:text-slate-400 ml-1" />}
-        </SettingRow>
-        {settings.balanceVolume && isPlusOrPro && (
-          <div className="mt-3">
-            <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">Balance Strength</p>
-            <SegmentControl
-              options={['gentle', 'normal', 'strong']}
-              labels={['Gentle', 'Normal', 'Strong']}
-              value={settings.balanceStrength}
-              onChange={(v) => change('balanceStrength', v)}
-            />
-          </div>
-        )}
-      </Card>
+          <Card title="Volume Balance" locked={isLocked('balanceVolume')} onLockClick={() => onUpgradePrompt('volumeBalance')}>
+            <SettingRow label={
+              <span className="flex items-center gap-1.5">
+                Balance Volume
+                <span title="Balances volume so quiet parts are louder and loud parts are softer." className="text-slate-500 cursor-help">ℹ️</span>
+              </span>
+            }>
+              <Toggle
+                checked={settings.balanceVolume}
+                onChange={() => toggle('balanceVolume')}
+                disabled={isLocked('balanceVolume')}
+              />
+              {isLocked('balanceVolume') && <Lock size={14} className="text-slate-500 dark:text-slate-400 ml-1" />}
+            </SettingRow>
+            {settings.balanceVolume && isPlusOrPro && (
+              <div className="mt-3">
+                <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">Balance Strength</p>
+                <SegmentControl
+                  options={['gentle', 'normal', 'strong']}
+                  labels={['Gentle', 'Normal', 'Strong']}
+                  value={settings.balanceStrength}
+                  onChange={(v) => change('balanceStrength', v)}
+                />
+              </div>
+            )}
+          </Card>
+        </>
+      )}
 
       {/* CTA */}
-      <motion.button
-        whileHover={{ scale: (hasFile && canProcess && !processing && !done) ? 1.02 : 1 }}
-        whileTap={{ scale: (hasFile && canProcess && !processing && !done) ? 0.98 : 1 }}
-        onClick={onProcess}
-        disabled={!hasFile || processing || done || !canProcess}
-        aria-label="Remove Noise"
-        className={`relative w-full py-4 rounded-2xl font-display font-bold text-base sm:text-lg flex items-center justify-center gap-3 shadow-lg ${
-          done
-            ? 'btn-done-gradient cursor-default'
-            : !hasFile || !canProcess
-            ? 'bg-slate-100 dark:bg-white/[0.08] text-slate-600 dark:text-slate-400 border-2 border-slate-300 dark:border-white/[0.08] cursor-not-allowed shadow-none'
-            : processing
-            ? 'bg-accent/10 text-accent border border-accent/30 cursor-wait shadow-none'
-            : 'bg-gradient-to-r from-cyan-500 to-violet-600 text-white hover:opacity-90 hover:shadow-lg'
-        }`}
-      >
-        {done ? (
-          <span className="done-text flex items-center gap-3"><CheckCircle2 size={24} /> ✓ Done — Download Ready</span>
-        ) : isDownloading ? (
-          <><Loader2 size={24} className="animate-spin" /> Downloading AI — {dlMBDone} / {totalModelMB} MB</>
-        ) : processing ? (
-          <><Loader2 size={24} className="animate-spin" /> Processing — {progress}%</>
-        ) : !canProcess ? (
-          'Monthly limit reached — Upgrade to continue'
-        ) : (
-          'Remove Noise with AI'
-        )}
-      </motion.button>
+      {(() => {
+        const simpleDownload = done && !showAdvanced;
+        const isActive = hasFile && canProcess && !processing && !done;
+        return (
+          <motion.button
+            whileHover={{ scale: (isActive || simpleDownload) ? 1.02 : 1 }}
+            whileTap={{ scale: (isActive || simpleDownload) ? 0.98 : 1 }}
+            onClick={simpleDownload ? onDownload : onProcess}
+            disabled={!hasFile || processing || (done && showAdvanced) || !canProcess}
+            aria-label={simpleDownload ? 'Download Video' : 'Remove Noise'}
+            className={`relative w-full py-4 rounded-2xl font-display font-bold text-base sm:text-lg flex items-center justify-center gap-3 shadow-lg ${
+              simpleDownload
+                ? 'bg-gradient-to-r from-cyan-500 to-violet-600 text-white hover:opacity-90 hover:shadow-lg'
+                : done
+                ? 'btn-done-gradient cursor-default'
+                : !hasFile || !canProcess
+                ? 'bg-slate-100 dark:bg-white/[0.08] text-slate-600 dark:text-slate-400 border-2 border-slate-300 dark:border-white/[0.08] cursor-not-allowed shadow-none'
+                : processing
+                ? 'bg-accent/10 text-accent border border-accent/30 cursor-wait shadow-none'
+                : 'bg-gradient-to-r from-cyan-500 to-violet-600 text-white hover:opacity-90 hover:shadow-lg'
+            }`}
+          >
+            {simpleDownload ? (
+              <><Download size={22} /> Download Video</>
+            ) : done ? (
+              <span className="done-text flex items-center gap-3"><CheckCircle2 size={24} /> ✓ Done — Download Ready</span>
+            ) : isDownloading ? (
+              <><Loader2 size={24} className="animate-spin" /> Downloading AI — {dlMBDone} / {totalModelMB} MB</>
+            ) : processing ? (
+              <><Loader2 size={24} className="animate-spin" /> Processing — {progress}%</>
+            ) : !canProcess ? (
+              'Monthly limit reached — Upgrade to continue'
+            ) : (
+              'Remove Noise with AI'
+            )}
+          </motion.button>
+        );
+      })()}
+
+      {/* Advanced settings toggle */}
+      {!processing && !done && (
+        <button
+          onClick={() => onAdvancedChange(!showAdvanced)}
+          className="flex items-center gap-1.5 mx-auto text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+        >
+          {showAdvanced ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+          {showAdvanced ? 'Hide Advanced Settings' : 'Advanced Settings'}
+        </button>
+      )}
 
       {/* Progress bar */}
       {processing && (
