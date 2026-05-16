@@ -38,9 +38,7 @@ export default function ProcessingPanel({
 
   const isLocked = (key) => !isPlusOrPro && (key === 'boostVoice' || key === 'balanceVolume');
 
-  const dlPercent = modelDownload
-    ? Math.round((modelDownload.demucs + modelDownload.deepfilter) / 2)
-    : 0;
+  const dlPercent = modelDownload ? (modelDownload.demucs ?? 0) : 0;
   const dlMBDone = modelDownload ? Math.round((dlPercent / 100) * totalModelMB) : 0;
 
   return (
@@ -66,25 +64,20 @@ export default function ProcessingPanel({
       {isDownloading && (
         <div className="bg-accent/5 border border-accent/25 rounded-2xl p-5 space-y-3">
           <p className="text-sm font-semibold text-navy dark:text-white">Downloading AI — First Time Only</p>
-          {[
-            { key: 'demucs',     name: 'Voice Separator', size: '120 MB', pct: modelDownload.demucs },
-            { key: 'deepfilter', name: 'Audio Cleaner',    size:  '50 MB', pct: modelDownload.deepfilter },
-          ].map((m) => (
-            <div key={m.key} className="space-y-1.5">
-              <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400">
-                <span>{m.name}</span>
-                <span className="font-mono">
-                  {m.size} · {m.pct === 100 ? '✓ Done' : m.pct === 0 ? 'Waiting…' : `${m.pct}%`}
-                </span>
-              </div>
-              <div className="h-1.5 bg-slate-200 dark:bg-white/5 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-accent rounded-full transition-all duration-300"
-                  style={{ width: `${m.pct}%` }}
-                />
-              </div>
+          <div className="space-y-1.5">
+            <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400">
+              <span>Voice Separator (Demucs v4)</span>
+              <span className="font-mono">
+                120 MB · {dlPercent === 100 ? '✓ Done' : dlPercent === 0 ? 'Waiting…' : `${dlPercent}%`}
+              </span>
             </div>
-          ))}
+            <div className="h-1.5 bg-slate-200 dark:bg-white/5 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-accent rounded-full transition-all duration-300"
+                style={{ width: `${dlPercent}%` }}
+              />
+            </div>
+          </div>
           <p className="text-xs text-slate-600 dark:text-slate-500">{totalModelMB} MB total · Saved forever after this</p>
         </div>
       )}

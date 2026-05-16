@@ -1,6 +1,7 @@
 export function buildFinalAudioFilters(boostDb, balanceVolume, balanceStrength) {
   const filters = [
-    'highpass=f=150',
+    'highpass=f=80',
+    'afftdn=nf=-25:nr=25',   // adaptive FFT denoiser — catches residual steady-state hum
     'lowpass=f=8000',
   ];
 

@@ -1,5 +1,5 @@
 // Audio processing worker.
-// Primary  : Demucs v4 + DeepFilterNet3 ONNX (when model files are in /public/models/).
+// Primary  : Demucs v4 ONNX → Wiener post-pass using original noise profile.
 // Fallback : Single-pass frequency-domain Wiener filter with frequency smoothing.
 
 import * as ort from 'onnxruntime-web';
@@ -10,13 +10,9 @@ const FFT_SIZE = 2048;              // ~46 ms frame @ 44100 Hz
 const HOP      = 512;               // 75% overlap
 const NBINS    = FFT_SIZE / 2 + 1;
 
-// Frequency-dependent Wiener parameters.
-// Voice fundamentals and harmonics live below 4 kHz → gentle suppression there.
-// High-frequency hiss (4–8 kHz) → stronger suppression without touching voice body.
-// Above 8 kHz → near-total suppression (no useful voice energy up there).
-const BIN_HZ = 44100 / FFT_SIZE; // ≈ 21.5 Hz per bin
+const BIN_HZ = 44100 / FFT_SIZE;   // ≈ 21.5 Hz per bin
 
-// Pre-compute per-bin alpha and beta so the hot loop stays fast.
+// Standard Wiener parameters — used as standalone fallback pass.
 const ALPHA_B = new Float32Array(NBINS);
 const BETA_B  = new Float32Array(NBINS);
 for (let k = 0; k < NBINS; k++) {
@@ -25,6 +21,19 @@ for (let k = 0; k < NBINS; k++) {
   else if (hz < 4000)  { ALPHA_B[k] = 2.5;  BETA_B[k] = 0.008;  }  // voice body — gentle
   else if (hz < 8000)  { ALPHA_B[k] = 10.0; BETA_B[k] = 0.0005; }  // hiss range
   else                 { ALPHA_B[k] = 25.0; BETA_B[k] = 0.0;    }   // cut all
+}
+
+// Post-Demucs Wiener parameters — voice is already preserved so we can be
+// more aggressive in the tonal hum / low-mid drone range (100–600 Hz).
+const ALPHA_POST = new Float32Array(NBINS);
+const BETA_POST  = new Float32Array(NBINS);
+for (let k = 0; k < NBINS; k++) {
+  const hz = k * BIN_HZ;
+  if (hz < 100)        { ALPHA_POST[k] = 25.0; BETA_POST[k] = 0.0001; }  // sub-bass: hard cut
+  else if (hz < 600)   { ALPHA_POST[k] = 8.0;  BETA_POST[k] = 0.005;  }  // hum / drone zone
+  else if (hz < 4000)  { ALPHA_POST[k] = 3.5;  BETA_POST[k] = 0.008;  }  // voice body: gentle
+  else if (hz < 8000)  { ALPHA_POST[k] = 12.0; BETA_POST[k] = 0.0003; }  // hiss range
+  else                 { ALPHA_POST[k] = 30.0; BETA_POST[k] = 0.0;    }   // cut all
 }
 
 const DEMUCS_CHUNK = 343980;    // ~7.8 s @ 44100 Hz
@@ -50,7 +59,6 @@ function isOnnx(buf) {
 // ─── ONNX model management ───────────────────────────────────────────────────
 
 let demucsSession = null;
-let dfSession     = null;
 let onnxReady     = null;
 
 async function tryLoadOnnx() {
@@ -75,13 +83,10 @@ async function tryLoadOnnx() {
     demucsSession = await loadModel('/models/htdemucs.onnx', ['webgpu', 'wasm']);
     if (!demucsSession) { onnxReady = false; return false; }
 
-    prog('Loading Audio Cleaner…', 12);
-    dfSession = await loadModel('/models/DeepFilterNet3.onnx', ['wasm']);
-
     onnxReady = true;
     return true;
   } catch {
-    demucsSession = dfSession = null;
+    demucsSession = null;
     onnxReady = false;
     return false;
   }
@@ -99,10 +104,26 @@ async function run({ samples, sampleRate }) {
 
     let result;
     if (useOnnx) {
+      // Capture the noise profile from the original (pre-Demucs) signal.
+      // After Demucs separates voice, we'll use this profile to Wiener-clean
+      // any residual hum / drone that leaked into the vocals stem.
+      prog('Analysing noise profile…', 17);
+      const originalNoise = estimateNoisePSD(samples);
+
       prog('Separating voice from noise…', 20);
       result = await runDemucs(samples);
-      prog('Cleaning up audio…', 75);
-      if (dfSession) result = await runDeepFilter(result);
+
+      // Estimate residual noise that survived Demucs (from quiet pauses
+      // in the vocal stem), then apply a targeted Wiener pass.
+      prog('Cleaning up residual noise…', 75);
+      const residualNoise = estimateNoisePSD(result);
+      // Blend: use the stronger of original vs residual at each bin so we
+      // don't under-estimate how much hum is still present.
+      const blendedNoise = new Float32Array(NBINS);
+      for (let k = 0; k < NBINS; k++) {
+        blendedNoise[k] = Math.max(originalNoise[k] * 0.4, residualNoise[k]);
+      }
+      result = await applyWienerFilter(result, blendedNoise, ALPHA_POST, BETA_POST, 76, 95);
     } else {
       result = await wienerDenoise(samples);
     }
@@ -132,8 +153,6 @@ async function runDemucs(mono) {
   }
   return out;
 }
-
-async function runDeepFilter(mono) { return mono; }
 
 // ─── FFT (Cooley-Tukey radix-2, in-place) ───────────────────────────────────
 
@@ -184,7 +203,7 @@ function estimateNoisePSD(samples) {
   }
 
   const sorted = Float32Array.from(energies).sort();
-  const thr = sorted[Math.floor(nF * 0.40)]; // quietest 40% — captures non-stationary silence
+  const thr = sorted[Math.floor(nF * 0.40)];
 
   const noise = new Float32Array(NBINS);
   const re = new Float32Array(FFT_SIZE), im = new Float32Array(FFT_SIZE);
@@ -222,26 +241,21 @@ function estimateNoisePSD(samples) {
   return noise;
 }
 
-// ─── Wiener denoiser ─────────────────────────────────────────────────────────
+// ─── Core Wiener denoiser (parameterised) ────────────────────────────────────
 
-async function wienerDenoise(samples) {
-  prog('Analysing noise profile…', 14);
-  const noise = estimateNoisePSD(samples);
-
+async function applyWienerFilter(samples, noise, alphaArr, betaArr, pctStart = 18, pctEnd = 92) {
   const output   = new Float32Array(samples.length);
   const weights  = new Float32Array(samples.length);
   const re  = new Float32Array(FFT_SIZE);
   const im  = new Float32Array(FFT_SIZE);
   const raw = new Float32Array(NBINS);
   const sm  = new Float32Array(NBINS);
-  // Temporal smoothing: blend current gain with previous frame's gain.
-  // Prevents rapid per-frame gain changes that produce musical-noise flicker.
   const prevGain = new Float32Array(NBINS).fill(1.0);
 
   const nF = Math.floor((samples.length - FFT_SIZE) / HOP) + 1;
 
   for (let f = 0; f < nF; f++) {
-    if (f % 80 === 0) prog('Removing noise…', 18 + Math.round((f / nF) * 74));
+    if (f % 80 === 0) prog('Removing noise…', pctStart + Math.round((f / nF) * (pctEnd - pctStart)));
 
     const s0 = f * HOP;
     for (let i = 0; i < FFT_SIZE; i++) {
@@ -250,15 +264,13 @@ async function wienerDenoise(samples) {
     }
     fft(re, im);
 
-    // Per-bin Wiener gain with frequency-dependent suppression:
-    // G(k) = max(BETA_B[k], (|X|² − ALPHA_B[k]·|N|²) / |X|²)
+    // Per-bin Wiener gain: G(k) = max(β, (|X|²−α·|N|²) / |X|²)
     for (let k = 0; k < NBINS; k++) {
       const pow = re[k] ** 2 + im[k] ** 2;
-      raw[k] = pow > 0 ? Math.max(BETA_B[k], (pow - ALPHA_B[k] * noise[k]) / pow) : BETA_B[k];
+      raw[k] = pow > 0 ? Math.max(betaArr[k], (pow - alphaArr[k] * noise[k]) / pow) : betaArr[k];
     }
 
-    // 5-point frequency smoothing — eliminates "musical noise" (isolated spectral peaks)
-    // without changing the average suppression level
+    // 5-point frequency smoothing — eliminates musical noise (isolated spectral peaks)
     sm[0] = (raw[0] * 3 + raw[1] * 2) / 5;
     sm[1] = (raw[0] + raw[1] * 2 + raw[2] * 2) / 5;
     for (let k = 2; k < NBINS - 2; k++) {
@@ -267,13 +279,13 @@ async function wienerDenoise(samples) {
     sm[NBINS-2] = (raw[NBINS-3] + raw[NBINS-2] * 2 + raw[NBINS-1]) / 4;
     sm[NBINS-1] = (raw[NBINS-2] + raw[NBINS-1] * 2) / 3;
 
-    // Temporal smoothing: 75% previous frame + 25% current — kills flicker
+    // Temporal smoothing: 75% previous frame + 25% current — prevents flicker
     for (let k = 0; k < NBINS; k++) {
       sm[k] = 0.75 * prevGain[k] + 0.25 * sm[k];
       prevGain[k] = sm[k];
     }
 
-    // Apply smoothed gains + enforce conjugate symmetry for real IFFT
+    // Apply gains + enforce conjugate symmetry for real IFFT
     for (let k = 0; k < NBINS; k++) {
       re[k] *= sm[k]; im[k] *= sm[k];
       if (k > 0 && k < NBINS - 1) {
@@ -293,11 +305,17 @@ async function wienerDenoise(samples) {
     }
   }
 
-  // Normalise by accumulated overlap weights
   for (let i = 0; i < output.length; i++) {
     if (weights[i] > 1e-6) output[i] /= weights[i];
   }
   return output;
+}
+
+// Standalone one-pass denoiser used when ONNX models are unavailable.
+async function wienerDenoise(samples) {
+  prog('Analysing noise profile…', 14);
+  const noise = estimateNoisePSD(samples);
+  return applyWienerFilter(samples, noise, ALPHA_B, BETA_B, 18, 92);
 }
 
 // ─── WAV encoder ─────────────────────────────────────────────────────────────

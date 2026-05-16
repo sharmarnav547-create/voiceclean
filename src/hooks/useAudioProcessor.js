@@ -6,12 +6,11 @@ function isOnnxBytes(bytes) {
 }
 
 const MODEL_URLS = {
-  demucs:     { url: '/models/htdemucs.onnx',      name: 'Voice Separator', sizeMB: 120 },
-  deepfilter: { url: '/models/DeepFilterNet3.onnx', name: 'Audio Cleaner',   sizeMB:  50 },
+  demucs: { url: '/models/htdemucs.onnx', name: 'Voice Separator', sizeMB: 120 },
 };
 
 const CACHE_NAME = 'clearvoice-models-v2';
-const TOTAL_MB = 170;
+const TOTAL_MB = 120;
 
 export function useAudioProcessor() {
   const workerRef = useRef(null);
