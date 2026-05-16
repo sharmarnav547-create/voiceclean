@@ -29,11 +29,11 @@ const ALPHA_POST = new Float32Array(NBINS);
 const BETA_POST  = new Float32Array(NBINS);
 for (let k = 0; k < NBINS; k++) {
   const hz = k * BIN_HZ;
-  if (hz < 100)        { ALPHA_POST[k] = 25.0; BETA_POST[k] = 0.0001; }  // sub-bass: hard cut
-  else if (hz < 600)   { ALPHA_POST[k] = 8.0;  BETA_POST[k] = 0.005;  }  // hum / drone zone
-  else if (hz < 4000)  { ALPHA_POST[k] = 3.5;  BETA_POST[k] = 0.008;  }  // voice body: gentle
-  else if (hz < 8000)  { ALPHA_POST[k] = 12.0; BETA_POST[k] = 0.0003; }  // hiss range
-  else                 { ALPHA_POST[k] = 30.0; BETA_POST[k] = 0.0;    }   // cut all
+  if (hz < 100)        { ALPHA_POST[k] = 15.0; BETA_POST[k] = 0.0002; }  // sub-bass: cut hard
+  else if (hz < 600)   { ALPHA_POST[k] = 3.5;  BETA_POST[k] = 0.008;  }  // hum zone: moderate (voice harmonics live here too)
+  else if (hz < 4000)  { ALPHA_POST[k] = 2.5;  BETA_POST[k] = 0.010;  }  // voice body: gentle
+  else if (hz < 8000)  { ALPHA_POST[k] = 10.0; BETA_POST[k] = 0.0005; }  // hiss range
+  else                 { ALPHA_POST[k] = 25.0; BETA_POST[k] = 0.0;    }   // cut all
 }
 
 const DEMUCS_CHUNK = 343980;    // ~7.8 s @ 44100 Hz
@@ -104,26 +104,15 @@ async function run({ samples, sampleRate }) {
 
     let result;
     if (useOnnx) {
-      // Capture the noise profile from the original (pre-Demucs) signal.
-      // After Demucs separates voice, we'll use this profile to Wiener-clean
-      // any residual hum / drone that leaked into the vocals stem.
-      prog('Analysing noise profile…', 17);
-      const originalNoise = estimateNoisePSD(samples);
-
       prog('Separating voice from noise…', 20);
       result = await runDemucs(samples);
 
-      // Estimate residual noise that survived Demucs (from quiet pauses
-      // in the vocal stem), then apply a targeted Wiener pass.
+      // Estimate only the noise still present in the Demucs vocal stem
+      // (from quiet/silent frames in the output). Using the original noise
+      // profile caused over-suppression because it included voice energy.
       prog('Cleaning up residual noise…', 75);
       const residualNoise = estimateNoisePSD(result);
-      // Blend: use the stronger of original vs residual at each bin so we
-      // don't under-estimate how much hum is still present.
-      const blendedNoise = new Float32Array(NBINS);
-      for (let k = 0; k < NBINS; k++) {
-        blendedNoise[k] = Math.max(originalNoise[k] * 0.4, residualNoise[k]);
-      }
-      result = await applyWienerFilter(result, blendedNoise, ALPHA_POST, BETA_POST, 76, 95);
+      result = await applyWienerFilter(result, residualNoise, ALPHA_POST, BETA_POST, 76, 95);
     } else {
       result = await wienerDenoise(samples);
     }
